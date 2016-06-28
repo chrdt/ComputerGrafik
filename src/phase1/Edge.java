@@ -2,8 +2,8 @@ package phase1;
 
 public class Edge {
     private Vertex start;
-    private Vertex prev;
-    private Vertex next;
+    private Edge prev;
+    private Edge next;
     private Edge twin;
     private NewFace newFace;
 
@@ -19,19 +19,19 @@ public class Edge {
         this.start = start;
     }
 
-    public Vertex getPrev() {
+    public Edge getPrev() {
         return this.prev;
     }
 
-    public void setPrev(Vertex prev) {
+    public void setPrev(Edge prev) {
         this.prev = prev;
     }
 
-    public Vertex getNext() {
+    public Edge getNext() {
         return this.next;
     }
 
-    public void setNext(Vertex next) {
+    public void setNext(Edge next) {
         this.next = next;
     }
 
@@ -52,11 +52,7 @@ public class Edge {
     }
 
     public Boolean hasTwin() {
-        if(this.twin == null) {
-            return false;
-        } else {
-            return true;
-        }
+        return this.twin != null;
     }
 
     public String toString() {

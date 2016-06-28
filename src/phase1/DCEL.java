@@ -1,17 +1,17 @@
 package phase1;
 
-import java.io.Console;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Hashtable;
+import java.util.List;
 import java.util.Scanner;
 
 public class DCEL {
-    private Hashtable<NewFace, Edge> faces;
-    private ArrayList<Edge> edges;
-    private ArrayList<Vertex> vertexes;
+    private List<NewFace> newFaces = new ArrayList<>();
+    private List<Edge> edges;
+    private List<Vertex> vertexes;
+
     private float[] vertexArray;
     private int[] linkedVertices;
 
@@ -27,27 +27,19 @@ public class DCEL {
         this.linkedVertices = linkedVertices;
     }
 
-    public Hashtable<NewFace, Edge> getFaces() {
-        return this.faces;
-    }
-
-    public void setFaces(Hashtable<NewFace, Edge> faces) {
-        this.faces = faces;
-    }
-
-    public ArrayList<Edge> getEdges() {
+    public List<Edge> getEdges() {
         return this.edges;
     }
 
-    public void setEdges(ArrayList<Edge> edges) {
+    public void setEdges(List<Edge> edges) {
         this.edges = edges;
     }
 
-    public ArrayList<Vertex> getVertexes() {
+    public List<Vertex> getVertexes() {
         return this.vertexes;
     }
 
-    public void setVertexes(ArrayList<Vertex> vertexes) {
+    public void setVertexes(List<Vertex> vertexes) {
         this.vertexes = vertexes;
     }
 
@@ -55,19 +47,104 @@ public class DCEL {
 
     public float[] getVertexArray() { return this.vertexArray; }
 
+    public List<NewFace> getNewFaces() {
+        return newFaces;
+    }
+
+    public void setNewFaces(List<NewFace> newFaces) {
+        this.newFaces = newFaces;
+    }
 
     private DCEL setUp(Parser parser, Converter converter) {
-        parser.einlesen("/src/resources/" + getChosenFile());
+        parser.einlesen("src\\resources\\" + getChosenFile());
 
         this.edges = converter.parseEdges(parser.getFaceArray());
-        this.faces = converter.getNewFaces();
+        this.newFaces = converter.getNewFaces();
         this.vertexes = parser.getVertexArray();
 
         generateVertexArray();
         generateLinkesVertices();
+        setFaceNormals();
+        setVertexNormals();
+
+        for(Vertex vertex : vertexes) {
+            System.out.println(vertex.getNormal()[0] + ";" + vertex.getNormal()[1] + ";" + vertex.getNormal()[2]);
+        }
 
         return this;
     }
+
+    private void setVertexNormals() {
+        List<NewFace> adjacentFaces = new ArrayList<>();
+        for(Vertex vertex : vertexes) {
+            adjacentFaces.clear();
+            findAdjacentFaces(adjacentFaces, vertex);
+            calculateNormal(adjacentFaces, vertex);
+        }
+    }
+
+    private void calculateNormal(List<NewFace> adjacentFaces, Vertex vertex) {
+        float x = 0;
+        float y = 0;
+        float z = 0;
+        for (NewFace adjacentFace : adjacentFaces) {
+            x = x + adjacentFace.getNormal()[0];
+            y = y + adjacentFace.getNormal()[1];
+            z = z + adjacentFace.getNormal()[2];
+
+        }
+        vertex.setNormal(new float[]{x/adjacentFaces.size(), y/adjacentFaces.size(), z/adjacentFaces.size()});
+    }
+
+    private void findAdjacentFaces(List<NewFace> adjacentFaces, Vertex vertex) {
+        for(NewFace face : newFaces) {
+            compareVertexes(vertex, adjacentFaces, face);
+        }
+    }
+
+    private void compareVertexes(Vertex vertex, List<NewFace> adjacentFaces, NewFace face) {
+        for(Vertex compare : face.getVertexes()) {
+            if(vertex.equals(compare)) {
+                adjacentFaces.add(face);
+                return;
+            }
+        }
+    }
+
+    private void setFaceNormals() {
+        for(NewFace face : newFaces) {
+            face.setNormal(generateNormal(
+                face.getEdge().getStart(),
+                face.getEdge().getPrev().getStart(),
+                face.getEdge().getNext().getStart())
+            );
+        }
+    }
+
+    private float[] generateNormal(Vertex start, Vertex prev, Vertex next) {
+        float[] vec1 = new float[3];
+        float[] vec2 = new float[3];
+        float[] normal = new float[3];
+
+        setVector(start, next, vec1);
+        setVector(start, prev, vec2);
+        calculateNormal(vec1, vec2, normal);
+
+        return normal;
+    }
+
+    private void calculateNormal(float[] vec1, float[] vec2, float[] normal) {
+        normal[0] = (vec2[1]*vec1[2])-(vec2[2]*vec1[1]);
+        normal[1] = (vec2[2]*vec1[0])-(vec2[0]*vec1[2]);
+        normal[2] = (vec2[0]*vec1[1])-(vec2[1]*vec1[0]);
+    }
+
+    private void setVector(Vertex start, Vertex prev, float[] vector) {
+        vector[0] = prev.getX() - start.getX();
+        vector[1] = prev.getY() - start.getY();
+        vector[2] = prev.getZ() - start.getZ();
+    }
+
 
     private String getChosenFile() {
         try {
@@ -91,11 +168,11 @@ public class DCEL {
         int[] indizes = new int[this.edges.size()*2];
 
         int index = 0;
-        for (int i = 0; i < this.edges.size(); i++) {
+        for (Edge edge : this.edges) {
             indizes[index++] = this.getVertexes().indexOf
-                    (this.edges.get(i).getStart());
+                    (edge.getStart());
             indizes[index++] = this.getVertexes().indexOf
-                    (this.edges.get(i).getNext());
+                    (edge.getNext().getStart());
         }
 
         this.linkedVertices = indizes;
@@ -105,10 +182,10 @@ public class DCEL {
         float[] floates = new float[this.getVertexes().size()*3];
 
         int index = 0;
-        for (int i=0; i<this.vertexes.size(); i++) {
-            floates[index++] = this.vertexes.get(i).getX();
-            floates[index++] = this.vertexes.get(i).getY();
-            floates[index++] = this.vertexes.get(i).getZ();
+        for (Vertex vertexe : this.vertexes) {
+            floates[index++] = vertexe.getX();
+            floates[index++] = vertexe.getY();
+            floates[index++] = vertexe.getZ();
         }
 
         this.vertexArray = floates;

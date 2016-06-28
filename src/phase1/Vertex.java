@@ -4,11 +4,20 @@ public class Vertex {
     private float x;
     private float y;
     private float z;
+    private float[] normal;
 
     public Vertex(float x, float y, float z) {
         this.x = x;
         this.y = y;
         this.z = z;
+    }
+
+    public float[] getNormal() {
+        return normal;
+    }
+
+    public void setNormal(float[] normal) {
+        this.normal = normal;
     }
 
     public float getX() {
@@ -40,6 +49,6 @@ public class Vertex {
     }
 
     public Boolean equals(Vertex v) {
-        return this.getX() == v.getX() && this.getY() == v.getY() && this.getZ() == v.getZ() ? true : false;
+        return this.getX() == v.getX() && this.getY() == v.getY() && this.getZ() == v.getZ();
     }
 }
